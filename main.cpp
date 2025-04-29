@@ -1,18 +1,20 @@
+#include "include/Bot.h"
+#include "include/Player.h"
 #include "include/TicTacToe.h"
-#include <iostream>
+#include <memory>
 
 int main() {
-  //
+  std::unique_ptr<Bot> bot = std::make_unique<Bot>('O', 1'000, 100);
 
-  std::array<Player, 2> players = {Player('X'), Player('O')};
+  // Create two players
+  std::array<std::unique_ptr<Player>, 2> players = {
+      std::make_unique<Player>('X'), std::move(bot)};
 
-  TicTacToe tictactoe(3, players);
+  // Initialize the game
+  TicTacToe game(3, players);
 
-  tictactoe.map_board();
-
-  std::cout << tictactoe.get_turn() << "\n";
-
-  tictactoe.start();
+  // Start the game
+  game.start();
 
   return 0;
 }
