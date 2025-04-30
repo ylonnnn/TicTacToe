@@ -1,6 +1,3 @@
-#include "../include/TicTacToe.h"
-#include "../include/utils.h"
-
 #include <algorithm>
 #include <array>
 #include <climits>
@@ -8,6 +5,9 @@
 #include <iostream>
 #include <memory>
 #include <vector>
+
+#include "../include/TicTacToe.h"
+#include "../include/utils.h"
 
 TicTacToe::TicTacToe(int grid_size,
                      std::array<std::unique_ptr<Player>, 2> &players)

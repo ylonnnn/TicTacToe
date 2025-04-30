@@ -1,9 +1,9 @@
+#include <cmath>
+#include <memory>
+
 #include "../include/Bot.h"
 #include "../include/TicTacToe.h"
 #include "../include/utils.h"
-
-#include <cmath>
-#include <memory>
 
 Bot::Bot(char mark) : Player(mark), place_delay(1'500), accuracy(50.0f){};
 Bot::Bot(char mark, int place_delay)

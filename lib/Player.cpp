@@ -1,9 +1,9 @@
-#include "../include/TicTacToe.h"
-#include "../include/utils.h"
-
 #include <cmath>
 #include <iostream>
 #include <memory>
+
+#include "../include/TicTacToe.h"
+#include "../include/utils.h"
 
 Player::Player(char mark) : mark(mark){};
 

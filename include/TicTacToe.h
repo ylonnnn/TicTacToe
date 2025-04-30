@@ -1,11 +1,12 @@
 #ifndef TICTACTOE_FILE_H
 #define TICTACTOE_FILE_H
 
-#include "Player.h"
 #include <array>
 #include <functional>
 #include <memory>
 #include <vector>
+
+#include "Player.h"
 
 struct Cell {
   char mark;
