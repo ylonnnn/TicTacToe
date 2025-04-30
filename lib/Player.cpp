@@ -1,6 +1,7 @@
 #include "../include/TicTacToe.h"
 #include "../include/utils.h"
 
+#include <cmath>
 #include <iostream>
 #include <memory>
 
@@ -14,14 +15,16 @@ int Player::get_turn(TicTacToe &game) const {
 
 void Player::play(TicTacToe &game) {
   Board &board = game.get_board();
-  int pos, turn = game.get_turn(std::make_unique<Player>(*this)),
-           opp_turn = opposing_turn(turn);
+  int pos, turn = game.get_turn(std::make_unique<Player>(*this));
 
   std::cout << "[" << turn << "] Enter the Mark Position [" << mark << "]: ";
   std::cin >> pos;
 
-  if (pos < 1 || pos > 9 || std::cin.fail()) {
-    std::cout << "Invalid position! Valid positions range from 1 to 9\n";
+  int grid_size = game.get_grid_size(), max_pos = std::pow(grid_size, 2);
+
+  if (pos < 1 || pos > max_pos || std::cin.fail()) {
+    std::cout << "Invalid position! Valid positions range from 1 to " << max_pos
+              << "\n";
 
     return play(game);
   }
@@ -32,8 +35,6 @@ void Player::play(TicTacToe &game) {
 
     return play(game);
   }
-
-  int grid_size = game.get_grid_size();
 
   board[(pos - 1) / grid_size][(pos - 1) % grid_size].mark = mark;
   game.empty_slots--;

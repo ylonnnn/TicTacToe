@@ -3,6 +3,7 @@
 
 #include "Player.h"
 #include <array>
+#include <functional>
 #include <memory>
 #include <vector>
 
@@ -26,6 +27,8 @@ protected:
   void initialize_turn();
   void initialize_board();
 
+  int generate_random_pos();
+
 public:
   int empty_slots;
 
@@ -34,12 +37,17 @@ public:
   int get_grid_size();
   const std::array<std::unique_ptr<Player>, 2> &get_players();
 
+  int get_board_center();
+
   int get_turn();
   int get_turn(const std::unique_ptr<Player> &player);
 
   void update_turn();
 
   Board &get_board();
+  Cell &get_cell(int pos);
+
+  std::vector<Cell> get_empty_cells();
 
   void map_board();
   bool has_mark(int pos);
