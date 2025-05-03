@@ -1,6 +1,5 @@
 #include <cmath>
 #include <iostream>
-#include <memory>
 
 #include "../include/TicTacToe.h"
 #include "../include/utils.h"
@@ -9,13 +8,11 @@ Player::Player(char mark) : mark(mark){};
 
 char Player::get_mark() const { return mark; }
 
-int Player::get_turn(TicTacToe &game) const {
-  return game.get_turn(std::make_unique<Player>(*this));
-}
+int Player::get_turn(TicTacToe &game) const { return game.get_turn(this); }
 
 void Player::play(TicTacToe &game) {
   Board &board = game.get_board();
-  int pos, turn = game.get_turn(std::make_unique<Player>(*this));
+  int pos, turn = game.get_turn(this);
 
   std::cout << "[" << turn << "] Enter the Mark Position [" << mark << "]: ";
   std::cin >> pos;
@@ -36,8 +33,7 @@ void Player::play(TicTacToe &game) {
     return play(game);
   }
 
-  board[(pos - 1) / grid_size][(pos - 1) % grid_size].mark = mark;
-  game.empty_slots--;
+  game.place_mark(turn, pos);
 
   // Map the board and process the played turn
   game.map_board();

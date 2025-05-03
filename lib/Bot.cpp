@@ -1,4 +1,5 @@
 #include <cmath>
+#include <iostream>
 #include <memory>
 
 #include "../include/Bot.h"
@@ -21,13 +22,13 @@ int Bot::decide_position(TicTacToe &game) {
   // If the random number is above the accuracy, create a random decision
   if (random() * 100.0 > accuracy) {
     std::vector<Cell> empty_cells = game.get_empty_cells();
-    Cell random_cell = random_element(empty_cells);
+    Cell &random_cell = random_element(empty_cells);
 
-    return (random_cell.position[0] * 3) + (random_cell.position[1] + 1);
+    return (random_cell.position[0] * grid_size) +
+           (random_cell.position[1] + 1);
   }
 
-  int turn = game.get_turn(std::make_unique<Player>(*this)),
-      opp_turn = opposing_turn(turn);
+  int turn = get_turn(game), opp_turn = opposing_turn(turn);
 
   Orientation self_optimal = game.optimal_orientation(turn);
   Orientation opp_optimal = game.optimal_orientation(opp_turn);
@@ -60,14 +61,14 @@ int Bot::decide_position(TicTacToe &game) {
     corners.resize(av_corners);
 
     if (av_corners) {
-      Cell corner = random_element(corners);
+      Cell &corner = random_element(corners);
 
-      return (corner.position[0] * 3) + (corner.position[1] + 1);
+      return (corner.position[0] * grid_size) + (corner.position[1] + 1);
     } else {
       std::vector<Cell> empty_cells = game.get_empty_cells();
-      Cell r_cell = random_element(empty_cells);
+      Cell &r_cell = random_element(empty_cells);
 
-      return (r_cell.position[0] * 3) + (r_cell.position[1] + 1);
+      return (r_cell.position[0] * grid_size) + (r_cell.position[1] + 1);
     }
   }
 
@@ -78,7 +79,7 @@ int Bot::decide_position(TicTacToe &game) {
       if (cell.mark == game.get_players()[turn - 1]->get_mark())
         continue;
 
-      return (cell.position[0] * 3) + (cell.position[1] + 1);
+      return (cell.position[0] * grid_size) + (cell.position[1] + 1);
     }
   }
 
@@ -88,7 +89,7 @@ int Bot::decide_position(TicTacToe &game) {
       if (cell.mark == game.get_players()[opp_turn - 1]->get_mark())
         continue;
 
-      return (cell.position[0] * 3) + (cell.position[1] + 1);
+      return (cell.position[0] * grid_size) + (cell.position[1] + 1);
     }
   }
 
@@ -98,11 +99,12 @@ int Bot::decide_position(TicTacToe &game) {
 void Bot::play(TicTacToe &game) {
   Board &board = game.get_board();
 
-  int pos = decide_position(game), grid_size = game.get_grid_size(),
-      i = (pos - 1) / grid_size, j = (pos - 1) % grid_size;
+  int pos = decide_position(game);
 
-  board[i][j].mark = mark;
-  game.empty_slots--;
+  std::cout << "placemend pos: " << pos << "\n";
+
+  // board[i][j].mark = mark;
+  game.place_mark(get_turn(game), pos);
 
   // Map the board and process the played turn
   game.map_board();

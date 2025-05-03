@@ -22,23 +22,23 @@
 #define PLAYER_2_CHAR 'O'
 
 // Modify bot settings
-#define BOT_ACCURACY 100.0f
+#define BOT_ACCURACY 25.0f
 
 int main() {
+  std::unique_ptr<Bot> bot =
+      std::make_unique<Bot>(PLAYER_2_CHAR, 1'000, BOT_ACCURACY);
+
+  // Create the opposing players (or bot)
+  std::array<std::unique_ptr<Player>, 2> players = {
+      std::make_unique<Player>(PLAYER_1_CHAR),
+      GAME_MODE == 1 ? std::make_unique<Player>(PLAYER_2_CHAR)
+                     : std::move(bot)};
+
+  // Initialize the game
+  TicTacToe game(GRID_SIZE, players);
+
   for (int i = 0; i != GAME_COUNT; i++) {
     std::cout << "\nGAME " << i + 1 << "\n";
-
-    std::unique_ptr<Bot> bot =
-        std::make_unique<Bot>(PLAYER_2_CHAR, 1'000, BOT_ACCURACY);
-
-    // Create the opposing players (or bot)
-    std::array<std::unique_ptr<Player>, 2> players = {
-        std::make_unique<Player>(PLAYER_1_CHAR),
-        GAME_MODE == 1 ? std::make_unique<Player>(PLAYER_2_CHAR)
-                       : std::move(bot)};
-
-    // Initialize the game
-    TicTacToe game(GRID_SIZE, players);
 
     // Start the game
     game.start();

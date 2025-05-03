@@ -7,14 +7,7 @@
 #include <vector>
 
 #include "Player.h"
-
-struct Cell {
-  char mark;
-  int position[2]; // [row][col]
-};
-
-using Board = std::vector<std::vector<Cell>>;
-using Orientation = std::vector<Cell>;
+#include "types.h"
 
 class TicTacToe {
 protected:
@@ -22,8 +15,10 @@ protected:
   std::array<std::unique_ptr<Player>, 2> &players;
   Board board;
 
-  std::unique_ptr<Player> winner;
+  Player *winner;
   int turn;
+
+  int empty_slots;
 
   void initialize_turn();
   void initialize_board();
@@ -31,8 +26,6 @@ protected:
   int generate_random_pos();
 
 public:
-  int empty_slots;
-
   TicTacToe(int grid_size, std::array<std::unique_ptr<Player>, 2> &players);
 
   int get_grid_size();
@@ -41,7 +34,7 @@ public:
   int get_board_center();
 
   int get_turn();
-  int get_turn(const std::unique_ptr<Player> &player);
+  int get_turn(const Player *player);
 
   void update_turn();
 
@@ -52,6 +45,7 @@ public:
 
   void map_board();
   bool has_mark(int pos);
+  bool place_mark(int turn, int pos);
 
   void check(int turn);
   int required_moves(const Orientation &orientation, int turn);
