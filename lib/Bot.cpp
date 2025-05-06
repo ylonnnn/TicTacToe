@@ -1,6 +1,7 @@
+#include <chrono>
 #include <cmath>
-#include <iostream>
 #include <memory>
+#include <thread>
 
 #include "../include/Bot.h"
 #include "../include/TicTacToe.h"
@@ -14,7 +15,7 @@ Bot::Bot(char mark, int place_delay, float accuracy)
     : Player(mark), place_delay(place_delay), accuracy(accuracy){};
 
 int Bot::get_place_delay() const { return place_delay; }
-int Bot::get_accuracy() const { return accuracy; }
+float Bot::get_accuracy() const { return accuracy; }
 
 int Bot::decide_position(TicTacToe &game) {
   int grid_size = game.get_grid_size(), square = std::pow(grid_size, 2);
@@ -97,13 +98,10 @@ int Bot::decide_position(TicTacToe &game) {
 }
 
 void Bot::play(TicTacToe &game) {
-  Board &board = game.get_board();
-
   int pos = decide_position(game);
 
-  std::cout << "placemend pos: " << pos << "\n";
+  std::this_thread::sleep_for(std::chrono::milliseconds(place_delay));
 
-  // board[i][j].mark = mark;
   game.place_mark(get_turn(game), pos);
 
   // Map the board and process the played turn

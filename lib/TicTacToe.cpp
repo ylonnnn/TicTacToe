@@ -310,8 +310,9 @@ std::vector<Orientation> TicTacToe::diagonal_orientations(int turn) {
 }
 
 void TicTacToe::start() {
-  // Initialize/Clear the board
+  // Initialize/Clear the board and initialize the turn
   initialize_board();
+  initialize_turn();
 
   // Map the board for an initial display
   map_board();
@@ -320,23 +321,21 @@ void TicTacToe::start() {
   players[turn - 1]->play(*this);
 }
 
-bool TicTacToe::process() {
+void TicTacToe::process() {
   check(turn);
 
   if (winner != nullptr) {
     end();
 
-    return true;
+    return;
   } else if (!empty_slots) {
     end();
 
-    return true;
+    return;
   }
 
   update_turn();
   players[turn - 1]->play(*this);
-
-  return false;
 }
 
 void TicTacToe::end() {

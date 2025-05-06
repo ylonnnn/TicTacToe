@@ -1,5 +1,4 @@
-#ifndef TICTACTOE_FILE_H
-#define TICTACTOE_FILE_H
+#pragma once
 
 #include <array>
 #include <functional>
@@ -56,8 +55,6 @@ public:
   std::vector<Orientation> diagonal_orientations(int turn);
 
   void start();
-  bool process();
+  void process();
   void end();
 };
-
-#endif

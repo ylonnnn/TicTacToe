@@ -1,5 +1,4 @@
-#ifndef BOT_FILE_H
-#define BOT_FILE_H
+#pragma once
 
 #include "Player.h"
 
@@ -14,11 +13,9 @@ public:
   Bot(char mark, int place_delay, float accuracy);
 
   int get_place_delay() const;
-  int get_accuracy() const;
+  float get_accuracy() const;
 
   int decide_position(TicTacToe &game);
 
   void play(TicTacToe &game) override;
 };
-
-#endif

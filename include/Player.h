@@ -1,5 +1,4 @@
-#ifndef PLAYER_FILE_H
-#define PLAYER_FILE_H
+#pragma once
 
 class TicTacToe;
 
@@ -15,5 +14,3 @@ public:
 
   virtual void play(TicTacToe &game);
 };
-
-#endif
