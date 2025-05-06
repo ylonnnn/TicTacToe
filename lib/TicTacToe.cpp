@@ -59,7 +59,8 @@ std::vector<Cell> TicTacToe::get_empty_cells() {
   const int square = std::pow(grid_size, 2);
 
   int emp_c = 0;
-  std::vector<Cell> empty_cells(square);
+  std::vector<Cell> empty_cells;
+  empty_cells.reserve(square);
 
   for (int i = 0; i < square; i++) {
     int pos = i + 1;
@@ -67,8 +68,6 @@ std::vector<Cell> TicTacToe::get_empty_cells() {
     if (!has_mark(pos))
       empty_cells[emp_c++] = get_cell(pos);
   }
-
-  empty_cells.resize(emp_c);
 
   return empty_cells;
 }
@@ -211,25 +210,26 @@ Orientation TicTacToe::optimal_orientation(int turn) {
 std::vector<Orientation> TicTacToe::horizontal_orientations(int turn) {
   char opponent_mark = players[opposing_turn(turn) - 1]->get_mark();
 
-  std::vector<Orientation> orientations(grid_size);
+  std::vector<Orientation> orientations;
+  orientations.reserve(grid_size);
 
   for (int i = 0; i < grid_size; i++) {
-    bool valid = true;
-    Orientation orientation(grid_size);
+    Orientation orientation;
+    orientation.reserve(grid_size);
 
     for (int j = 0; j < grid_size; j++) {
       Cell cell = board[i][j];
 
-      if (cell.mark != opponent_mark)
-        orientation[j] = cell;
-      else {
-        valid = false;
-
+      if (cell.mark == opponent_mark)
         break;
-      }
+
+      orientation.push_back(cell);
     }
 
-    orientations[i] = valid ? std::move(orientation) : Orientation(grid_size);
+    if ((int)(orientation.size()) < grid_size)
+      continue;
+
+    orientations.push_back(std::move(orientation));
   }
 
   return orientations;
@@ -238,25 +238,26 @@ std::vector<Orientation> TicTacToe::horizontal_orientations(int turn) {
 std::vector<Orientation> TicTacToe::vertical_orientations(int turn) {
   char opponent_mark = players[opposing_turn(turn) - 1]->get_mark();
 
-  std::vector<Orientation> orientations(grid_size);
+  std::vector<Orientation> orientations;
+  orientations.reserve(grid_size);
 
   for (int i = 0; i < grid_size; i++) {
-    bool valid = true;
-    Orientation orientation(grid_size);
+    Orientation orientation;
+    orientation.reserve(grid_size);
 
     for (int j = 0; j < grid_size; j++) {
       Cell cell = board[j][i];
 
-      if (cell.mark != opponent_mark)
-        orientation[j] = cell;
-      else {
-        valid = false;
-
+      if (cell.mark == opponent_mark)
         break;
-      }
+
+      orientation.push_back(cell);
     }
 
-    orientations[i] = valid ? std::move(orientation) : Orientation(grid_size);
+    if ((int)(orientation.size()) < grid_size)
+      continue;
+
+    orientations.push_back(std::move(orientation));
   }
 
   return orientations;
@@ -269,8 +270,10 @@ std::vector<Orientation> TicTacToe::diagonal_orientations(int turn) {
   std::vector<Orientation> orientations(do_n);
 
   bool valid[do_n] = {true, true};
-  Orientation _orientations[do_n] = {Orientation(grid_size),
-                                     Orientation(grid_size)};
+  Orientation _orientations[do_n];
+
+  _orientations[0].reserve(grid_size);
+  _orientations[1].reserve(grid_size);
 
   for (int i = 0; i < grid_size; i++) {
     // Diagonal
@@ -279,10 +282,10 @@ std::vector<Orientation> TicTacToe::diagonal_orientations(int turn) {
       if (valid[0]) {
         Cell cell = board[i][i];
 
-        if (cell.mark != opponent_mark)
-          _orientations[0][i] = cell;
-        else
+        if (cell.mark == opponent_mark)
           valid[0] = false;
+
+        _orientations[0].push_back(cell);
       }
     }
 
@@ -292,18 +295,17 @@ std::vector<Orientation> TicTacToe::diagonal_orientations(int turn) {
       if (valid[1]) {
         Cell cell = board[i][grid_size - (i + 1)];
 
-        if (cell.mark != opponent_mark)
-          _orientations[1][i] = cell;
-
-        else
+        if (cell.mark == opponent_mark)
           valid[1] = false;
+
+        _orientations[1].push_back(cell);
       }
     }
   }
 
   for (int i = 0; i < do_n; i++) {
-    orientations[i] =
-        valid[i] ? std::move(_orientations[i]) : Orientation(grid_size);
+    if (valid[i])
+      orientations.push_back(std::move(_orientations[i]));
   }
 
   return orientations;
