@@ -2,6 +2,8 @@
 
 #include "player/Player.hpp"
 #include "tictactoe/TicTacToe.hpp"
+#include <cmath>
+#include <iostream>
 
 namespace TicTacToe
 {
@@ -11,55 +13,36 @@ namespace TicTacToe
 
     void Player::play(TicTacToe &game)
     {
-        // TODO: Player::play()
+        Turn &turn = game.turn();
+        uint32_t pos;
+
+        std::cout << "Enter the Mark Position [" << mark_ << "]: ";
+        std::cin >> pos;
+
+        uint32_t grid_size = game.grid_size(), max_pos = std::pow(grid_size, 2);
+
+        if (pos > max_pos || std::cin.fail())
+        {
+            std::cout << "Invalid position! Valid positions range from 1 to "
+                      << max_pos << "\n";
+
+            return play(game);
+        }
+
+        // If one of the players' marks are in that cell, it has already been
+        // marked
+        Cell &cell = game.cell_at(pos);
+        if (cell.marked())
+        {
+            std::cout << "This position is already marked!\n";
+            return play(game);
+        }
+
+        cell.place(turn);
+
+        // Map the board and process the played turn
+        game.map_board();
+        game.process();
     }
 
 } // namespace TicTacToe
-
-// namespace TicTacToe
-
-// #include <cmath>
-
-// #include <iostream>
-
-// #include "../include/TicTacToe.h"
-// #include "../include/utils.h"
-
-// Player::Player(char mark) : mark(mark) {};
-
-// char Player::get_mark() const { return mark; }
-
-// int Player::get_turn(TicTacToe &game) const { return game.get_turn(this); }
-
-// void Player::play(TicTacToe &game)
-// {
-//     Board &board = game.get_board();
-//     int pos, turn = game.get_turn(this);
-
-//     std::cout << "[" << turn << "] Enter the Mark Position [" << mark << "]:
-//     "; std::cin >> pos;
-
-//     int grid_size = game.get_grid_size(), max_pos = std::pow(grid_size, 2);
-
-//     if (pos < 1 || pos > max_pos || std::cin.fail())
-//     {
-//         std::cout << "Invalid position! Valid positions range from 1 to "
-//                   << max_pos << "\n";
-
-//         return play(game);
-//     }
-
-//     // If one of the players' marks are in that cell, it has already been
-//     marked if (game.has_mark(pos))
-//     {
-//         std::cout << "This position is already marked!\n";
-
-//         return play(game);
-//     }
-
-//     game.place_mark(turn, pos);
-
-//     // Map the board and process the played turn
-//     game.map_board();
-//     game.process();
-// }

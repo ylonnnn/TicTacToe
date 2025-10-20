@@ -1,6 +1,7 @@
 #include <array>
 #include <climits>
 #include <cmath>
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <vector>
@@ -8,6 +9,7 @@
 #include "player/Player.hpp"
 #include "tictactoe/Cell.hpp"
 #include "tictactoe/TicTacToe.hpp"
+#include "tictactoe/constants.hpp"
 #include "utils/random.hpp"
 
 namespace TicTacToe
@@ -18,9 +20,6 @@ namespace TicTacToe
     {
         for (size_t i = 0; i < players.size(); ++i)
             turns_[i] = std::make_unique<Turn>(i + 1, std::move(players[i]));
-
-        initialize_turn();
-        initialize_board();
     }
 
     void TicTacToe::initialize_turn()
@@ -31,6 +30,8 @@ namespace TicTacToe
     void TicTacToe::initialize_board()
     {
         auto area = std::pow(grid_size_, 2);
+
+        board_.clear();
         board_.reserve(area);
 
         for (uint32_t i = 0; i < area; ++i)
@@ -56,7 +57,53 @@ namespace TicTacToe
     Turn &TicTacToe::turn() { return *turns_[current_turn_]; }
     const Turn &TicTacToe::turn() const { return *turns_[current_turn_]; }
 
+    Turn *TicTacToe::turn(size_t no) { return turns_[no].get(); }
+
+    const Turn *TicTacToe::turn(size_t no) const { return turns_[no].get(); }
+
+    Turn *TicTacToe::turn(const Player &player)
+    {
+        for (auto &turn : turns_)
+            if (&turn->player() == &player)
+                return turn.get();
+
+        return nullptr;
+    }
+
+    const Turn *TicTacToe::turn(const Player &player) const
+    {
+        for (auto &turn : turns_)
+            if (&turn->player() == &player)
+                return turn.get();
+
+        return nullptr;
+    }
+
+    size_t TicTacToe::current_turn() const { return current_turn_; }
+
+    size_t TicTacToe::opposing_turn() const
+    {
+        return opposing_turn(current_turn_);
+    }
+
+    size_t TicTacToe::opposing_turn(size_t turn_no) const
+    {
+        return (turn_no + 1) % PLAYER_COUNT;
+    }
+
     Cell &TicTacToe::cell_at(uint32_t pos) { return board_[pos]; }
+
+    std::vector<Cell *> TicTacToe::empty_cells() const
+    {
+        std::vector<Cell *> empty;
+        empty.reserve(std::pow(grid_size_, 2));
+
+        for (auto &cell : board_)
+            if (!cell.marked())
+                empty.push_back(const_cast<Cell *>(&cell));
+
+        return empty;
+    }
 
     void TicTacToe::map_board() const
     {
@@ -90,250 +137,199 @@ namespace TicTacToe
         std::cout << "\n";
     }
 
-    // bool TicTacToe::has_mark(int pos)
-    // {
-    //     int i = (pos - 1) / grid_size, j = (pos - 1) % grid_size;
-    //     char cell_mark = board[i][j].mark;
+    void TicTacToe::check(Turn &turn)
+    {
+        Orientation optimal = optimal_orientation(turn);
+        if (optimal.cells.empty())
+            return;
 
-    //     return cell_mark == players[0]->get_mark() ||
-    //            cell_mark == players[1]->get_mark();
-    // }
+        uint32_t required = optimal.required_moves();
+        if (required == 0)
+            winner_ = &turn;
+    }
 
-    // bool TicTacToe::place_mark(int turn, int pos)
-    // {
-    //     int square = std::pow(grid_size, 2);
+    Orientation TicTacToe::optimal_orientation(Turn &turn)
+    {
+        Orientation orientation{*this, turn};
+        uint32_t req_moves = UINT32_MAX;
 
-    //     if ((pos < 1) || (pos > square) || has_mark(pos))
-    //         return false;
+        std::vector<Orientation> horizontal = horizontal_orientations(turn),
+                                 vertical = vertical_orientations(turn),
+                                 diagonal = diagonal_orientations(turn);
 
-    //     empty_slots--;
-    //     board[(pos - 1) / grid_size][(pos - 1) % grid_size].mark =
-    //         players[turn - 1]->get_mark();
+        int h_size = horizontal.size(), v_size = vertical.size(),
+            dg_size = diagonal.size();
 
-    //     check(turn);
+        auto optimal = [&](Orientation &_orientation, Turn &turn) -> void
+        {
+            if (_orientation.cells.size() == 0)
+                return;
 
-    //     return true;
-    // }
+            auto update = [&](Orientation &_orientation,
+                              uint32_t required) -> void
+            {
+                orientation.cells = std::move(_orientation.cells);
+                req_moves = required;
+            };
 
-    // void TicTacToe::check(int turn)
-    // {
-    //     Orientation optimal = optimal_orientation(turn);
-    //     int required = required_moves(optimal, turn);
+            uint32_t required = _orientation.required_moves();
+            if (required > req_moves)
+                return;
 
-    //     if (required == 0)
-    //     {
-    //         winner = players[turn - 1].get();
-    //     }
-    // }
+            // Less than
+            if (required < req_moves)
+                update(_orientation, required);
 
-    // int TicTacToe::required_moves(const Orientation &orientation, int turn)
-    // {
-    //     int moves = 0;
+            // Equal
+            else if ((required == req_moves) && random() * 100 < 50)
+                update(_orientation, required);
+        };
 
-    //     std::unique_ptr<Player> &curr = players[turn - 1],
-    //                             &opponent = players[opposing_turn(turn) - 1];
+        for (int i = 0; i < std::max({h_size, v_size, dg_size}); i++)
+        {
+            // Horizontal
+            if (i < h_size)
+                optimal(horizontal[i], turn);
 
-    //     if ((int)(orientation.size()) < grid_size)
-    //         return grid_size;
+            // Vertical
+            if (i < v_size)
+            {
+                optimal(vertical[i], turn);
+            }
 
-    //     for (int i = 0; i < grid_size; i++)
-    //     {
-    //         Cell cell = orientation[i];
+            // Diagonal
+            if (i < dg_size)
+            {
+                optimal(diagonal[i], turn);
+            }
+        }
 
-    //         // If there is a mark of the opponent, return 0
-    //         // It is not a winning orientation any longer
-    //         if (cell.mark == opponent->get_mark())
-    //             return grid_size;
+        return orientation;
+    }
 
-    //         // If the mark within the orientation is not the mark of the
-    //         player
-    //         // of the specified turn, it is an empty cell. Therefore, the
-    //         amount
-    //         // of moves will be further increased.
-    //         if (cell.mark != curr->get_mark())
-    //             moves++;
-    //     }
+    std::vector<Orientation> TicTacToe::horizontal_orientations(Turn &turn)
+    {
+        std::vector<Orientation> orientations;
+        orientations.reserve(grid_size_);
 
-    //     return moves;
-    // }
+        for (int i = 0; i < grid_size_; ++i)
+        {
+            Orientation orientation{*this, turn};
+            orientation.cells.reserve(grid_size_);
 
-    // Orientation TicTacToe::optimal_orientation(int turn)
-    // {
-    //     Orientation orientation;
-    //     int req_moves = INT_MAX;
+            for (int j = 0; j < grid_size_; ++j)
+            {
+                Cell &cell = board_[i * grid_size_ + j];
+                char mark = cell.mark();
 
-    //     std::vector<Orientation> horizontal = horizontal_orientations(turn),
-    //                              vertical = vertical_orientations(turn),
-    //                              diagonal = diagonal_orientations(turn);
+                if (mark != EMPTY_CHAR && mark != turn.player().mark())
+                    break;
 
-    //     int h_size = horizontal.size(), v_size = vertical.size(),
-    //         dg_size = diagonal.size();
+                orientation.cells.push_back(&cell);
+            }
 
-    //     std::function<void(Orientation &, int)> optimal =
-    //         [&](Orientation &_orientation, int turn) -> void
-    //     {
-    //         if (_orientation.size() == 0)
-    //             return;
+            if (orientation.cells.size() < static_cast<size_t>(grid_size_))
+                continue;
 
-    //         std::function<void(Orientation &, int)> update =
-    //             [&](Orientation &_orientation, int required) -> void
-    //         {
-    //             orientation = _orientation;
-    //             req_moves = required;
-    //         };
+            orientations.push_back(std::move(orientation));
+        }
 
-    //         int required = required_moves(_orientation, turn);
-    //         if (required > req_moves)
-    //             return;
+        return orientations;
+    }
 
-    //         // Less than
-    //         if (required < req_moves)
-    //             update(_orientation, required);
+    std::vector<Orientation> TicTacToe::vertical_orientations(Turn &turn)
+    {
+        std::vector<Orientation> orientations;
+        orientations.reserve(grid_size_);
 
-    //         // Equal
-    //         else if ((required == req_moves) && random() * 100 < 50)
-    //             update(_orientation, required);
-    //     };
+        for (int i = 0; i < grid_size_; ++i)
+        {
+            Orientation orientation{*this, turn};
+            orientation.cells.reserve(grid_size_);
 
-    //     for (int i = 0; i < std::max({h_size, v_size, dg_size}); i++)
-    //     {
-    //         // Horizontal
-    //         if (i < h_size)
-    //             optimal(horizontal[i], turn);
+            for (int j = 0; j < grid_size_; ++j)
+            {
+                Cell &cell = board_[j * grid_size_ + i];
+                char mark = cell.mark();
 
-    //         // Vertical
-    //         if (i < v_size)
-    //         {
-    //             optimal(vertical[i], turn);
-    //         }
+                if (mark != EMPTY_CHAR && mark != turn.player().mark())
+                    break;
 
-    //         // Diagonal
-    //         if (i < dg_size)
-    //         {
-    //             optimal(diagonal[i], turn);
-    //         }
-    //     }
+                orientation.cells.push_back(&cell);
+            }
 
-    //     return orientation;
-    // }
+            if (orientation.cells.size() < static_cast<size_t>(grid_size_))
+                continue;
 
-    // std::vector<Orientation> TicTacToe::horizontal_orientations(int turn)
-    // {
-    //     char opponent_mark = players[opposing_turn(turn) - 1]->get_mark();
+            orientations.push_back(std::move(orientation));
+        }
 
-    //     std::vector<Orientation> orientations;
-    //     orientations.reserve(grid_size);
+        return orientations;
+    }
 
-    //     for (int i = 0; i < grid_size; i++)
-    //     {
-    //         Orientation orientation;
-    //         orientation.reserve(grid_size);
+    std::vector<Orientation> TicTacToe::diagonal_orientations(Turn &turn)
+    {
+        constexpr uint32_t do_n = 2;
 
-    //         for (int j = 0; j < grid_size; j++)
-    //         {
-    //             Cell cell = board[i][j];
+        std::vector<Orientation> orientations;
+        orientations.reserve(do_n);
 
-    //             if (cell.mark == opponent_mark)
-    //                 break;
+        bool valid[do_n] = {true, true};
+        std::array<Orientation, do_n> _orientations{Orientation{*this, turn},
+                                                    {*this, turn}};
 
-    //             orientation.push_back(cell);
-    //         }
+        _orientations[0].cells.reserve(grid_size_);
+        _orientations[1].cells.reserve(grid_size_);
 
-    //         if ((int)(orientation.size()) < grid_size)
-    //             continue;
+        for (int i = 0; i < grid_size_; ++i)
+        {
+            // Diagonal
+            // [i][i]
+            {
+                if (valid[0])
+                {
+                    Cell &cell = board_[i * grid_size_ + i];
+                    char mark = cell.mark();
 
-    //         orientations.push_back(std::move(orientation));
-    //     }
+                    if (mark != EMPTY_CHAR && mark != turn.player().mark())
+                        valid[0] = false;
 
-    //     return orientations;
-    // }
+                    _orientations[0].cells.push_back(&cell);
+                }
+            }
 
-    // std::vector<Orientation> TicTacToe::vertical_orientations(int turn)
-    // {
-    //     char opponent_mark = players[opposing_turn(turn) - 1]->get_mark();
+            // Anti-Diagonal
+            // [i][grid_size - (i + 1)]
+            {
+                if (valid[1])
+                {
+                    Cell &cell =
+                        board_[(i * grid_size_) + grid_size_ - (i + 1)];
+                    char mark = cell.mark();
 
-    //     std::vector<Orientation> orientations;
-    //     orientations.reserve(grid_size);
+                    if (mark != EMPTY_CHAR && mark != turn.player().mark())
+                        valid[1] = false;
 
-    //     for (int i = 0; i < grid_size; i++)
-    //     {
-    //         Orientation orientation;
-    //         orientation.reserve(grid_size);
+                    _orientations[1].cells.push_back(&cell);
+                }
+            }
+        }
 
-    //         for (int j = 0; j < grid_size; j++)
-    //         {
-    //             Cell cell = board[j][i];
+        for (int i = 0; i < do_n; i++)
+        {
+            if (valid[i])
+                orientations.push_back(std::move(_orientations[i]));
+        }
 
-    //             if (cell.mark == opponent_mark)
-    //                 break;
-
-    //             orientation.push_back(cell);
-    //         }
-
-    //         if ((int)(orientation.size()) < grid_size)
-    //             continue;
-
-    //         orientations.push_back(std::move(orientation));
-    //     }
-
-    //     return orientations;
-    // }
-
-    // std::vector<Orientation> TicTacToe::diagonal_orientations(int turn)
-    // {
-    //     const int do_n = 2;
-
-    //     char opponent_mark = players[opposing_turn(turn) - 1]->get_mark();
-    //     std::vector<Orientation> orientations(do_n);
-
-    //     bool valid[do_n] = {true, true};
-    //     Orientation _orientations[do_n];
-
-    //     _orientations[0].reserve(grid_size);
-    //     _orientations[1].reserve(grid_size);
-
-    //     for (int i = 0; i < grid_size; i++)
-    //     {
-    //         // Diagonal
-    //         // [i][i]
-    //         {
-    //             if (valid[0])
-    //             {
-    //                 Cell cell = board[i][i];
-
-    //                 if (cell.mark == opponent_mark)
-    //                     valid[0] = false;
-
-    //                 _orientations[0].push_back(cell);
-    //             }
-    //         }
-
-    //         // Anti-Diagonal
-    //         // [i][grid_size - (i + 1)]
-    //         {
-    //             if (valid[1])
-    //             {
-    //                 Cell cell = board[i][grid_size - (i + 1)];
-
-    //                 if (cell.mark == opponent_mark)
-    //                     valid[1] = false;
-
-    //                 _orientations[1].push_back(cell);
-    //             }
-    //         }
-    //     }
-
-    //     for (int i = 0; i < do_n; i++)
-    //     {
-    //         if (valid[i])
-    //             orientations.push_back(std::move(_orientations[i]));
-    //     }
-
-    //     return orientations;
-    // }
+        return orientations;
+    }
 
     void TicTacToe::start()
     {
+        // Initialize the turn and board
+        initialize_turn();
+        initialize_board();
+
         // Map the board for an initial display
         map_board();
 
@@ -343,36 +339,32 @@ namespace TicTacToe
 
     void TicTacToe::process()
     {
-        // check(turn);
+        ++placement;
 
-        // if (winner != nullptr)
-        // {
-        //     end();
+        check(*turns_[current_turn_]);
 
-        //     return;
-        // }
-        // else if (!empty_slots)
-        // {
-        //     end();
+        if (winner_ != nullptr || placement == board_.size())
+        {
+            end();
+            return;
+        }
 
-        //     return;
-        // }
-
-        current_turn_ = (current_turn_ + 1) % 2;
+        current_turn_ = (current_turn_ + 1) % PLAYER_COUNT;
         turns_[current_turn_]->player().play(*this);
     }
 
     void TicTacToe::end()
     {
         // TODO: Game End
-        // if (winner == nullptr)
-        // {
-        //     std::cout << "DRAW\n";
-        // }
-        // else
-        //     std::cout << "WINNER: Player " << winner->get_mark() << "\n";
+        if (winner_ == nullptr)
+        {
+            std::cout << "DRAW\n";
+        }
 
-        // winner = nullptr;
+        else
+            std::cout << "WINNER: Player " << winner_->player().mark() << "\n";
+
+        winner_ = nullptr;
     }
 
 } // namespace TicTacToe

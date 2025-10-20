@@ -1,9 +1,12 @@
 #include <chrono>
 #include <cmath>
+#include <iostream>
 #include <memory>
 #include <thread>
 
 #include "player/Bot.hpp"
+#include "tictactoe/TicTacToe.hpp"
+#include "utils/random.hpp"
 
 namespace TicTacToe
 {
@@ -18,109 +21,105 @@ namespace TicTacToe
 
     double Bot::accuracy() const { return accuracy_; }
 
-    size_t Bot::decide_position(TicTacToe &game)
+    uint32_t Bot::decide_position(TicTacToe &game)
     {
-        // TODO: Bot::decide_position()
-        return 0;
+        uint32_t grid_size = game.grid_size(), square = std::pow(grid_size, 2);
+
+        // If the random number is above the accuracy, create a random decision
+
+        if ((utils::random::generate() * 100.0) > accuracy_)
+        {
+            std::vector<Cell *> empty_cells = game.empty_cells();
+            return utils::random::random_element(empty_cells)->absolute_pos();
+        }
+
+        // Retrieve self and opposing turn
+        Turn *self = game.turn(*this), *opp = game.turn(game.opposing_turn());
+
+        Orientation self_optimal = game.optimal_orientation(*self);
+        Orientation opp_optimal = game.optimal_orientation(*opp);
+
+        uint32_t pos, self_req = self_optimal.required_moves(),
+                      opp_req = opp_optimal.required_moves();
+
+        // If the required moves of the bot's and opponent's optimal orientation
+        // is the same as the grid size (no optimal orientation), pick from one
+        // of the best initial places
+        if (opp_req == grid_size && self_req == grid_size)
+        {
+            uint32_t center = game.board_center();
+            Cell &c_cell = game.cell_at(center);
+
+            // If the center is vacant, place the mark
+            if (!c_cell.marked())
+                return center;
+
+            // Otherwise, pick a corner
+            std::vector<Cell *> corners(4);
+            std::vector<uint32_t> positions = {
+                1, grid_size, (square - grid_size) + 1, square};
+
+            uint32_t av_corners = 0;
+            for (uint32_t &pos : positions)
+            {
+                Cell &cell = game.cell_at(pos);
+
+                if (!cell.marked())
+                    corners[av_corners++] = &cell;
+            }
+
+            corners.resize(av_corners);
+
+            // There are available corners to be filled
+            if (av_corners)
+                return utils::random::random_element(corners)->absolute_pos();
+
+            else
+            {
+                std::vector<Cell *> empty_cells = game.empty_cells();
+                return utils::random::random_element(empty_cells)
+                    ->absolute_pos();
+            }
+        }
+
+        // If the required moves of the bot itself is less than the required
+        // moves of the player, proceed to playing offensively
+        else if (self_req <= opp_req)
+        {
+            for (Cell *cell : self_optimal.cells)
+                if (cell->mark() != mark_)
+                    return cell->absolute_pos();
+        }
+
+        // Otherwise, play defensively to keep the opponent from winning
+        else
+        {
+            for (Cell *cell : opp_optimal.cells)
+                if (cell->mark() != opp->player().mark())
+                    return cell->absolute_pos();
+        }
+
+        return pos;
     }
 
     void Bot::play(TicTacToe &game)
     {
-        // TODO: Bot::play()
+        uint32_t pos = decide_position(game);
+
+        // Apply place delay
+        std::this_thread::sleep_for(std::chrono::milliseconds(place_delay_));
+
+        Turn *self = game.turn(*this);
+
+        // Highly unlikely, impossible even
+        if (self == nullptr)
+            return;
+
+        game.cell_at(pos).place(*self);
+
+        // Map the board and process the played turn
+        game.map_board();
+        game.process();
     }
 
-    // int Bot::decide_position(TicTacToe &game) {
-    //   int grid_size = game.get_grid_size(), square = std::pow(grid_size, 2);
-
-    //   // If the random number is above the accuracy, create a random decision
-    //   if (random() * 100.0 > accuracy) {
-    //     std::vector<Cell> empty_cells = game.get_empty_cells();
-    //     Cell &random_cell = random_element(empty_cells);
-
-    //     return (random_cell.position[0] * grid_size) +
-    //            (random_cell.position[1] + 1);
-    //   }
-
-    //   int turn = get_turn(game), opp_turn = opposing_turn(turn);
-
-    //   Orientation self_optimal = game.optimal_orientation(turn);
-    //   Orientation opp_optimal = game.optimal_orientation(opp_turn);
-
-    //   int pos, self_req = game.required_moves(self_optimal, turn),
-    //            opp_req = game.required_moves(opp_optimal, opp_turn);
-
-    //   // If the required moves of the bot's and opponent's optimal
-    //   orientation is
-    //   // the same as the grid size (no optimal orientation), pick from one of
-    //   the
-    //   // best initial places
-    //   if (opp_req == grid_size && self_req == grid_size) {
-    //     Board &board = game.get_board();
-    //     int center = game.get_board_center();
-
-    //     // If the center is vacant, place the mark
-    //     if (!game.has_mark(center))
-    //       return center;
-
-    //     // Otherwise, pick a corner
-    //     std::vector<Cell> corners(4);
-    //     std::vector<int> positions = {1, grid_size, (square - grid_size) + 1,
-    //                                   square};
-
-    //     int av_corners = 0;
-    //     for (int &pos : positions) {
-    //       if (!game.has_mark(pos))
-    //         corners[av_corners++] = game.get_cell(pos);
-    //     }
-
-    //     corners.resize(av_corners);
-
-    //     if (av_corners) {
-    //       Cell &corner = random_element(corners);
-
-    //       return (corner.position[0] * grid_size) + (corner.position[1] + 1);
-    //     } else {
-    //       std::vector<Cell> empty_cells = game.get_empty_cells();
-    //       Cell &r_cell = random_element(empty_cells);
-
-    //       return (r_cell.position[0] * grid_size) + (r_cell.position[1] + 1);
-    //     }
-    //   }
-
-    //   // If the required moves of the bot itself is less than the required
-    //   moves of
-    //   // the player, proceed to playing offensively
-    //   else if (self_req <= opp_req) {
-    //     for (Cell &cell : self_optimal) {
-    //       if (cell.mark == game.get_players()[turn - 1]->get_mark())
-    //         continue;
-
-    //       return (cell.position[0] * grid_size) + (cell.position[1] + 1);
-    //     }
-    //   }
-
-    //   // Otherwise, play defensively to keep the player from winning
-    //   else {
-    //     for (Cell &cell : opp_optimal) {
-    //       if (cell.mark == game.get_players()[opp_turn - 1]->get_mark())
-    //         continue;
-
-    //       return (cell.position[0] * grid_size) + (cell.position[1] + 1);
-    //     }
-    //   }
-
-    //   return pos;
-    // }
-
-    // void Bot::play(TicTacToe &game) {
-    //   int pos = decide_position(game);
-
-    //   std::this_thread::sleep_for(std::chrono::milliseconds(place_delay));
-
-    //   game.place_mark(get_turn(game), pos);
-
-    //   // Map the board and process the played turn
-    //   game.map_board();
-    //   game.process();
-    // }
 } // namespace TicTacToe

@@ -5,5 +5,6 @@
 namespace TicTacToe
 {
     constexpr size_t PLAYER_COUNT = 2;
+    constexpr char EMPTY_CHAR = '\0';
 
-}
+} // namespace TicTacToe

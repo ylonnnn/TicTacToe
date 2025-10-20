@@ -22,19 +22,30 @@ namespace TicTacToe
         Turn &turn();
         const Turn &turn() const;
 
+        Turn *turn(size_t no);
+        const Turn *turn(size_t no) const;
+
+        Turn *turn(const Player &player);
+        const Turn *turn(const Player &player) const;
+
+        size_t current_turn() const;
+
+        size_t opposing_turn() const;
+        size_t opposing_turn(size_t turn_no) const;
+
         Cell &cell_at(uint32_t pos);
 
-        // std::vector<Cell *> empty_cells() const;
+        std::vector<Cell *> empty_cells() const;
 
         void map_board() const;
 
-        // void check(int8_t turn);
-        // int required_moves(const Orientation &orientation, int8_t turn);
-        // Orientation optimal_orientation(int8_t turn);
+        void check(Turn &turn);
 
-        // std::vector<Orientation> horizontal_orientations(int8_t turn);
-        // std::vector<Orientation> vertical_orientations(int8_t turn);
-        // std::vector<Orientation> diagonal_orientations(int8_t turn);
+        Orientation optimal_orientation(Turn &turn);
+
+        std::vector<Orientation> horizontal_orientations(Turn &turn);
+        std::vector<Orientation> vertical_orientations(Turn &turn);
+        std::vector<Orientation> diagonal_orientations(Turn &turn);
 
         void start();
         void process();
@@ -51,11 +62,11 @@ namespace TicTacToe
         std::vector<Cell> board_;
 
         uint32_t current_turn_ = 0;
+        uint32_t placement = 0;
+
         std::array<std::unique_ptr<Turn>, PLAYER_COUNT> turns_;
 
-        // Player *winner_ = nullptr;
-
-        // int8_t turn_;
+        Turn *winner_ = nullptr;
     };
 
 } // namespace TicTacToe

@@ -39,7 +39,7 @@ constexpr Configuration config{
             PlayerConfiguration{
                 .mark = 'O',
                 .is_bot = true,
-                .bot_config{.place_delay = 1'000, .accuracy = 50.0}},
+                .bot_config{.place_delay = 500, .accuracy = 100.0}},
         },
 };
 

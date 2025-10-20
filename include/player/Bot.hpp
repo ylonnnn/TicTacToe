@@ -17,7 +17,7 @@ namespace TicTacToe
         uint32_t place_delay() const;
         double accuracy() const;
 
-        size_t decide_position(TicTacToe &game);
+        uint32_t decide_position(TicTacToe &game);
 
         void play(TicTacToe &game) override;
 
