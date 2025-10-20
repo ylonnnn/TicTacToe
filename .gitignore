@@ -1,2 +1,6 @@
 # Folder Ignorance
 /build
+/obj
+
+/compile_flags.txt
+/.clang-format
