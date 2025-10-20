@@ -118,11 +118,11 @@ namespace TicTacToe
         std::cout << "\n";
         print_line();
 
-        for (int i = 0; i < grid_size_; ++i)
+        for (uint32_t i = 0; i < grid_size_; ++i)
         {
             std::cout << "|\t";
 
-            for (int j = 0; j < grid_size_; ++j)
+            for (uint32_t j = 0; j < grid_size_; ++j)
             {
                 std::cout << board_[i * grid_size_ + j].mark() << "\t";
 
@@ -157,8 +157,8 @@ namespace TicTacToe
                                  vertical = vertical_orientations(turn),
                                  diagonal = diagonal_orientations(turn);
 
-        int h_size = horizontal.size(), v_size = vertical.size(),
-            dg_size = diagonal.size();
+        size_t h_size = horizontal.size(), v_size = vertical.size(),
+               dg_size = diagonal.size();
 
         auto optimal = [&](Orientation &_orientation, Turn &turn) -> void
         {
@@ -181,11 +181,12 @@ namespace TicTacToe
                 update(_orientation, required);
 
             // Equal
-            else if ((required == req_moves) && random() * 100 < 50)
+            else if ((required == req_moves) &&
+                     utils::random::generate() * 100 < 50)
                 update(_orientation, required);
         };
 
-        for (int i = 0; i < std::max({h_size, v_size, dg_size}); i++)
+        for (size_t i = 0; i < std::max({h_size, v_size, dg_size}); i++)
         {
             // Horizontal
             if (i < h_size)
@@ -212,12 +213,12 @@ namespace TicTacToe
         std::vector<Orientation> orientations;
         orientations.reserve(grid_size_);
 
-        for (int i = 0; i < grid_size_; ++i)
+        for (uint32_t i = 0; i < grid_size_; ++i)
         {
             Orientation orientation{*this, turn};
             orientation.cells.reserve(grid_size_);
 
-            for (int j = 0; j < grid_size_; ++j)
+            for (uint32_t j = 0; j < grid_size_; ++j)
             {
                 Cell &cell = board_[i * grid_size_ + j];
                 char mark = cell.mark();
@@ -242,12 +243,12 @@ namespace TicTacToe
         std::vector<Orientation> orientations;
         orientations.reserve(grid_size_);
 
-        for (int i = 0; i < grid_size_; ++i)
+        for (uint32_t i = 0; i < grid_size_; ++i)
         {
             Orientation orientation{*this, turn};
             orientation.cells.reserve(grid_size_);
 
-            for (int j = 0; j < grid_size_; ++j)
+            for (uint32_t j = 0; j < grid_size_; ++j)
             {
                 Cell &cell = board_[j * grid_size_ + i];
                 char mark = cell.mark();
@@ -281,7 +282,7 @@ namespace TicTacToe
         _orientations[0].cells.reserve(grid_size_);
         _orientations[1].cells.reserve(grid_size_);
 
-        for (int i = 0; i < grid_size_; ++i)
+        for (uint32_t i = 0; i < grid_size_; ++i)
         {
             // Diagonal
             // [i][i]
@@ -315,7 +316,7 @@ namespace TicTacToe
             }
         }
 
-        for (int i = 0; i < do_n; i++)
+        for (uint32_t i = 0; i < do_n; i++)
         {
             if (valid[i])
                 orientations.push_back(std::move(_orientations[i]));
